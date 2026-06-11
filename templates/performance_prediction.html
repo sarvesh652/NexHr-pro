@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}AI Performance Prediction — HR Intelligence{% endblock %}
+{% block page_title %}AI Performance Prediction{% endblock %}
+
+{% block content %}
+<div class="ai-info-banner">
+    🧠 <strong>AI Prediction Engine</strong> — Based on: Attendance (30%) + Task Completion (35%) + Performance Review (35%)
+</div>
+
+<div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+    {% set high = predictions | selectattr('prediction.color', 'equalto', 'success') | list | length %}
+    {% set avg_p = predictions | selectattr('prediction.color', 'equalto', 'warning') | list | length %}
+    {% set risk = predictions | selectattr('prediction.color', 'equalto', 'danger') | list | length %}
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,.15);color:#10b981;">🚀</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ high }}">0</div>
+            <div class="stat-label">High Performers</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,.15);color:#f59e0b;">📊</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ avg_p }}">0</div>
+            <div class="stat-label">Average Performers</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(239,68,68,.15);color:#ef4444;">⚠️</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ risk }}">0</div>
+            <div class="stat-label">At Risk</div>
+        </div>
+    </div>
+</div>
+
+<div class="pred-grid">
+    {% for item in predictions %}
+    <div class="pred-card pred-{{ item.prediction.color }}">
+        <div class="pred-card-top">
+            <div style="display:flex;align-items:center;gap:.75rem;">
+                <div class="emp-avatar">{{ item.employee.name[0] }}</div>
+                <div>
+                    <div style="font-weight:600;font-size:.9rem;">{{ item.employee.name }}</div>
+                    <div style="font-size:.75rem;color:#94a3b8;">{{ item.employee.department }} · {{ item.employee.designation }}</div>
+                </div>
+            </div>
+            <div class="pred-label-badge pred-{{ item.prediction.color }}">
+                {{ item.prediction.icon }} {{ item.prediction.label }}
+            </div>
+        </div>
+
+        <div class="pred-score-ring">
+            <svg viewBox="0 0 80 80" width="80" height="80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="6"/>
+                <circle cx="40" cy="40" r="32" fill="none"
+                    stroke="{% if item.prediction.color=='success' %}#10b981{% elif item.prediction.color=='warning' %}#f59e0b{% else %}#ef4444{% endif %}"
+                    stroke-width="6"
+                    stroke-dasharray="{{ (item.prediction.pred_score / 100 * 201) | round }} 201"
+                    stroke-dashoffset="50"
+                    stroke-linecap="round"/>
+                <text x="40" y="45" text-anchor="middle" font-size="16" font-weight="700"
+                    fill="{% if item.prediction.color=='success' %}#10b981{% elif item.prediction.color=='warning' %}#f59e0b{% else %}#ef4444{% endif %}">
+                    {{ item.prediction.pred_score }}
+                </text>
+            </svg>
+        </div>
+
+        <div class="pred-metrics">
+            <div class="pred-metric-row">
+                <span>Attendance</span>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:{{ item.att_pct }}%;background:#3b82f6;"></div></div>
+                <span>{{ item.att_pct }}%</span>
+            </div>
+            <div class="pred-metric-row">
+                <span>Tasks Done</span>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:{{ item.employee.task_completion }}%;background:#8b5cf6;"></div></div>
+                <span>{{ item.employee.task_completion }}%</span>
+            </div>
+            <div class="pred-metric-row">
+                <span>Review Score</span>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:{{ item.employee.performance_score }}%;background:#f59e0b;"></div></div>
+                <span>{{ item.employee.performance_score }}%</span>
+            </div>
+        </div>
+
+        <div class="pred-suggestions">
+            <div style="font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:.4rem;">💡 SUGGESTIONS</div>
+            {% for s in item.prediction.suggestions %}
+            <div class="pred-tip">→ {{ s }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Performance Distribution Chart -->
+<div class="panel" style="margin-top:1.5rem;">
+    <div class="panel-header"><h3>Performance Distribution</h3></div>
+    <div class="panel-body chart-body">
+        <canvas id="perfChart" height="100"></canvas>
+    </div>
+</div>
+<script>
+new Chart(document.getElementById('perfChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for item in predictions %}'{{ item.employee.name.split()[0] }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'AI Prediction Score',
+            data: [{% for item in predictions %}{{ item.prediction.pred_score }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [{% for item in predictions %}'{% if item.prediction.color=="success" %}#10b981{% elif item.prediction.color=="warning" %}#f59e0b{% else %}#ef4444{% endif %}'{% if not loop.last %},{% endif %}{% endfor %}],
+            borderRadius: 6,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { min: 0, max: 100, grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#64748b', callback: v => v+'%' } },
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } }
+        },
+        animation: { duration: 900 }
+    }
+});
+</script>
+{% endblock %}

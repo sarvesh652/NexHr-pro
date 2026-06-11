@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NexHR Intelligence Platform{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- QR Code library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+{% if session.get('user_id') %}
+<div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-hex">
+                <svg viewBox="0 0 50 50" fill="none" stroke="#00f5d4" stroke-width="1.5" width="36" height="36" style="filter:drop-shadow(0 0 6px #00f5d4)">
+                    <polygon points="25,3 47,14 47,36 25,47 3,36 3,14"/>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-name">NEXHR</div>
+                <div class="brand-sub">Intelligence Platform</div>
+            </div>
+        </div>
+
+        <div class="user-card">
+            <div class="user-avatar">{{ session.user_name[0] }}</div>
+            <div class="user-info">
+                <div class="user-name">{{ session.user_name }}</div>
+                <div class="user-role role-{{ session.role }}">{{ session.role | upper }}</div>
+            </div>
+            <div class="online-dot"></div>
+        </div>
+
+        <nav class="sidebar-nav">
+            {% if session.role == 'admin' %}
+            <a href="{{ url_for('admin.dashboard') }}" class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                <span class="nav-icon">⬡</span> Dashboard
+            </a>
+            <a href="{{ url_for('admin.view_employees') }}" class="nav-item {% if request.endpoint in ['admin.view_employees','admin.add_employee','admin.edit_employee'] %}active{% endif %}">
+                <span class="nav-icon">◉</span> Employees
+            </a>
+            <a href="#" onclick="openLiveTracker()" class="nav-item">
+                <span class="nav-icon pulse-icon">⬤</span> Live Tracker
+                <span class="nav-badge live">LIVE</span>
+            </a>
+            <a href="#" onclick="openLearningHub()" class="nav-item">
+                <span class="nav-icon">◈</span> Learning Hub
+            </a>
+            <a href="{{ url_for('hr.candidates') }}" class="nav-item {% if request.endpoint == 'hr.candidates' %}active{% endif %}">
+                <span class="nav-icon">◐</span> Candidates
+            </a>
+            <a href="{{ url_for('hr.attendance') }}" class="nav-item {% if request.endpoint == 'hr.attendance' %}active{% endif %}">
+                <span class="nav-icon">◑</span> Attendance
+            </a>
+            <a href="{{ url_for('hr.performance_prediction') }}" class="nav-item {% if request.endpoint == 'hr.performance_prediction' %}active{% endif %}">
+                <span class="nav-icon">◒</span> AI Prediction
+            </a>
+            <a href="{{ url_for('admin.manage_users') }}" class="nav-item {% if request.endpoint == 'admin.manage_users' %}active{% endif %}">
+                <span class="nav-icon">◇</span> Users
+            </a>
+            {% elif session.role == 'hr' %}
+            <a href="{{ url_for('hr.dashboard') }}" class="nav-item {% if request.endpoint == 'hr.dashboard' %}active{% endif %}">
+                <span class="nav-icon">⬡</span> Dashboard
+            </a>
+            <a href="{{ url_for('admin.view_employees') }}" class="nav-item {% if request.endpoint in ['admin.view_employees','admin.add_employee','admin.edit_employee'] %}active{% endif %}">
+                <span class="nav-icon">◉</span> Employees
+            </a>
+            <a href="#" onclick="openLiveTracker()" class="nav-item">
+                <span class="nav-icon pulse-icon">⬤</span> Live Tracker
+                <span class="nav-badge live">LIVE</span>
+            </a>
+            <a href="#" onclick="openLearningHub()" class="nav-item">
+                <span class="nav-icon">◈</span> Learning Hub
+            </a>
+            <a href="{{ url_for('hr.candidates') }}" class="nav-item {% if request.endpoint == 'hr.candidates' %}active{% endif %}">
+                <span class="nav-icon">◐</span> Candidates
+            </a>
+            <a href="{{ url_for('hr.attendance') }}" class="nav-item {% if request.endpoint == 'hr.attendance' %}active{% endif %}">
+                <span class="nav-icon">◑</span> Attendance
+            </a>
+            <a href="{{ url_for('hr.performance_prediction') }}" class="nav-item {% if request.endpoint == 'hr.performance_prediction' %}active{% endif %}">
+                <span class="nav-icon">◒</span> AI Prediction
+            </a>
+            {% elif session.role == 'manager' %}
+            <a href="{{ url_for('manager.dashboard') }}" class="nav-item {% if request.endpoint == 'manager.dashboard' %}active{% endif %}">
+                <span class="nav-icon">⬡</span> Dashboard
+            </a>
+            <a href="#" onclick="openLiveTracker()" class="nav-item">
+                <span class="nav-icon pulse-icon">⬤</span> Live Tracker
+                <span class="nav-badge live">LIVE</span>
+            </a>
+            <a href="#" onclick="openLearningHub()" class="nav-item">
+                <span class="nav-icon">◈</span> Learning Hub
+            </a>
+            <a href="{{ url_for('hr.attendance') }}" class="nav-item {% if request.endpoint == 'hr.attendance' %}active{% endif %}">
+                <span class="nav-icon">◑</span> Attendance
+            </a>
+            <a href="{{ url_for('hr.performance_prediction') }}" class="nav-item {% if request.endpoint == 'hr.performance_prediction' %}active{% endif %}">
+                <span class="nav-icon">◒</span> AI Prediction
+            </a>
+            {% endif %}
+        </nav>
+
+        <a href="{{ url_for('auth.logout') }}" class="logout-btn">
+            <span>⏻</span> Sign Out
+        </a>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="page-title">{% block page_title %}Dashboard{% endblock %}</div>
+            <div class="top-bar-right">
+                <div class="live-clock" id="liveClock"></div>
+                <button class="icon-btn" onclick="openLiveTracker()" title="Live Tracker">⬤ LIVE</button>
+                <button class="icon-btn" onclick="toggleChatbot()" title="HR Assistant">🤖 AI Bot</button>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="alerts-wrap">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                {{ message }}
+                <button onclick="this.parentElement.remove()" class="alert-close">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="content-area">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+
+<!-- ====== LIVE TRACKER MODAL ====== -->
+<div class="modal-overlay" id="liveTrackerModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-panel tracker-panel">
+        <div class="modal-hdr">
+            <div class="modal-title">
+                <span class="pulse-dot"></span> Live Employee Tracker
+            </div>
+            <button onclick="document.getElementById('liveTrackerModal').classList.remove('open')" class="modal-close">×</button>
+        </div>
+        <div class="tracker-body">
+            <div class="tracker-stats">
+                <div class="tstat"><span class="tstat-n" id="t-online">8</span><span class="tstat-l">Online</span></div>
+                <div class="tstat"><span class="tstat-n" id="t-working">6</span><span class="tstat-l">Working</span></div>
+                <div class="tstat"><span class="tstat-n" id="t-learning">3</span><span class="tstat-l">Learning</span></div>
+                <div class="tstat"><span class="tstat-n" id="t-break">2</span><span class="tstat-l">On Break</span></div>
+            </div>
+            <div class="tracker-list" id="trackerList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== LEARNING HUB MODAL ====== -->
+<div class="modal-overlay" id="learningModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-panel learning-panel">
+        <div class="modal-hdr">
+            <div class="modal-title">◈ Today's Learning Hub</div>
+            <button onclick="document.getElementById('learningModal').classList.remove('open')" class="modal-close">×</button>
+        </div>
+        <div class="learning-body" id="learningBody"></div>
+    </div>
+</div>
+
+<!-- ====== EMPLOYEE ID CARD MODAL ====== -->
+<div class="modal-overlay" id="idCardModal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-panel idcard-panel">
+        <div class="modal-hdr">
+            <div class="modal-title">◉ Employee ID Card</div>
+            <div style="display:flex;gap:.5rem">
+                <button onclick="printIDCard()" class="btn-neon-sm">🖨 Print</button>
+                <button onclick="document.getElementById('idCardModal').classList.remove('open')" class="modal-close">×</button>
+            </div>
+        </div>
+        <div id="idCardContent"></div>
+    </div>
+</div>
+
+<!-- ====== CHATBOT ====== -->
+<div class="chatbot-widget" id="chatbotWidget">
+    <div class="chatbot-header">
+        <div class="chatbot-title">🤖 AI HR Assistant</div>
+        <button onclick="toggleChatbot()" class="chatbot-close">×</button>
+    </div>
+    <div class="chatbot-messages" id="chatMessages">
+        <div class="chat-msg bot-msg">
+            ⚡ Hello! I'm your AI HR Assistant.<br>Ask me about employees, attendance, performance, or type <strong>help</strong>.
+        </div>
+    </div>
+    <div class="chatbot-input-row">
+        <input type="text" id="chatInput" class="chatbot-input" placeholder="Ask anything..." onkeydown="if(event.key==='Enter') sendChat()">
+        <button onclick="sendChat()" class="chatbot-send">➤</button>
+    </div>
+</div>
+
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<div id="toastContainer"></div>
+
+<script>
+// Live Clock
+function updateClock() {
+    const el = document.getElementById('liveClock');
+    if (!el) return;
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' · ' + now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Auto-dismiss alerts
+setTimeout(() => {
+    document.querySelectorAll('.alert').forEach(a => { a.style.transition='opacity .5s'; a.style.opacity='0'; setTimeout(()=>a.remove(),500); });
+}, 4000);
+
+// Animated counters
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.stat-value[data-count]').forEach(el => {
+        const target = parseFloat(el.dataset.count);
+        const prefix = el.dataset.prefix || '';
+        const suffix = el.dataset.suffix || '';
+        const isDec = el.dataset.decimal === 'true';
+        let cur = 0;
+        const step = target / 50;
+        const iv = setInterval(() => {
+            cur = Math.min(cur + step, target);
+            el.textContent = prefix + (isDec ? cur.toFixed(1) : Math.floor(cur).toLocaleString()) + suffix;
+            if (cur >= target) clearInterval(iv);
+        }, 20);
+    });
+});
+
+// Toast
+function showToast(msg, type='success') {
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    t.innerHTML = msg;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 3500);
+}
+
+// ====== LIVE TRACKER ======
+const EMPLOYEES = [
+    {id:'EMP001',name:'Arjun Sharma',dept:'Engineering',status:'working',task:'Code Review - Module A',learning:'React Advanced Hooks',time:'2h 14m',avatar:'A',perf:92},
+    {id:'EMP002',name:'Priya Nair',dept:'Design',status:'learning',task:'UI/UX Research',learning:'Figma Prototyping',time:'1h 05m',avatar:'P',perf:88},
+    {id:'EMP003',name:'Rahul Kumar',dept:'Sales',status:'working',task:'Client Proposal',learning:'Sales Psychology',time:'3h 22m',avatar:'R',perf:75},
+    {id:'EMP004',name:'Sneha Patel',dept:'HR',status:'break',task:'Lunch Break',learning:'HR Compliance',time:'0h 45m',avatar:'S',perf:84},
+    {id:'EMP005',name:'Vikram Singh',dept:'Engineering',status:'working',task:'Backend API Dev',learning:'Node.js Microservices',time:'4h 10m',avatar:'V',perf:95},
+    {id:'EMP006',name:'Anjali Mehta',dept:'Finance',status:'working',task:'Q4 Report',learning:'Excel Power BI',time:'1h 55m',avatar:'A',perf:79},
+    {id:'EMP007',name:'Karan Joshi',dept:'Marketing',status:'learning',task:'Campaign Analysis',learning:'Google Analytics 4',time:'2h 30m',avatar:'K',perf:82},
+    {id:'EMP008',name:'Divya Rao',dept:'Engineering',status:'working',task:'Testing Sprint',learning:'Cypress E2E Testing',time:'3h 50m',avatar:'D',perf:91},
+    {id:'EMP009',name:'Amit Verma',dept:'HR',status:'learning',task:'Training Module',learning:'HRMS Best Practices',time:'1h 20m',avatar:'A',perf:77},
+    {id:'EMP010',name:'Meera Reddy',dept:'Design',status:'break',task:'Short Break',learning:'Motion Design',time:'0h 30m',avatar:'M',perf:86},
+];
+
+const STATUS_COLORS = { working:'#22c55e', learning:'#f59e0b', break:'#64748b', offline:'#ef4444' };
+const STATUS_ICONS = { working:'▶', learning:'◈', break:'⏸', offline:'○' };
+
+function openLiveTracker() {
+    document.getElementById('liveTrackerModal').classList.add('open');
+    renderTracker();
+    startTrackerUpdates();
+}
+
+function renderTracker() {
+    const list = document.getElementById('trackerList');
+    list.innerHTML = EMPLOYEES.map(e => `
+        <div class="tracker-row">
+            <div class="tr-avatar" style="background:${STATUS_COLORS[e.status]}22;color:${STATUS_COLORS[e.status]};border:1px solid ${STATUS_COLORS[e.status]}44">${e.avatar}</div>
+            <div class="tr-info">
+                <div class="tr-name">${e.name} <span class="tr-id">${e.id}</span></div>
+                <div class="tr-task">📌 ${e.task}</div>
+                <div class="tr-learn">📚 Learning: <span style="color:#f59e0b">${e.learning}</span></div>
+            </div>
+            <div class="tr-right">
+                <div class="tr-status" style="color:${STATUS_COLORS[e.status]}">${STATUS_ICONS[e.status]} ${e.status.toUpperCase()}</div>
+                <div class="tr-time">${e.time}</div>
+                <div class="tr-perf">${e.perf}%</div>
+                <button onclick="showIDCard(${JSON.stringify(e).replace(/"/g,'&quot;')})" class="btn-neon-xs">ID Card</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+let trackerInterval;
+function startTrackerUpdates() {
+    clearInterval(trackerInterval);
+    trackerInterval = setInterval(() => {
+        EMPLOYEES.forEach(e => {
+            if (e.status === 'working') {
+                const [h,m] = e.time.split('h ');
+                let mins = parseInt(h)*60 + parseInt(m);
+                mins++;
+                e.time = `${Math.floor(mins/60)}h ${mins%60}m`;
+            }
+        });
+        renderTracker();
+    }, 60000);
+}
+
+// ====== LEARNING HUB ======
+const LEARNING_DATA = [
+    {name:'Arjun Sharma',course:'React Advanced Hooks',progress:68,modules:5,done:3,cert:'React Developer'},
+    {name:'Priya Nair',course:'Figma Prototyping',progress:45,modules:8,done:3,cert:'UI/UX Designer'},
+    {name:'Rahul Kumar',course:'Sales Psychology',progress:80,modules:6,done:5,cert:'Sales Pro'},
+    {name:'Vikram Singh',course:'Node.js Microservices',progress:35,modules:10,done:3,cert:'Backend Architect'},
+    {name:'Karan Joshi',course:'Google Analytics 4',progress:55,modules:7,done:4,cert:'Digital Analyst'},
+    {name:'Divya Rao',course:'Cypress E2E Testing',progress:72,modules:9,done:6,cert:'QA Engineer'},
+    {name:'Amit Verma',course:'HRMS Best Practices',progress:90,modules:5,done:4,cert:'HR Professional'},
+    {name:'Meera Reddy',course:'Motion Design',progress:28,modules:12,done:3,cert:'Motion Designer'},
+];
+
+function openLearningHub() {
+    document.getElementById('learningModal').classList.add('open');
+    const body = document.getElementById('learningBody');
+    body.innerHTML = `
+        <div class="learn-summary">
+            <div class="lsumm"><span style="font-size:1.5rem;font-weight:700;color:#00f5d4">${LEARNING_DATA.length}</span><span>Active Learners</span></div>
+            <div class="lsumm"><span style="font-size:1.5rem;font-weight:700;color:#f59e0b">${Math.round(LEARNING_DATA.reduce((a,b)=>a+b.progress,0)/LEARNING_DATA.length)}%</span><span>Avg. Progress</span></div>
+            <div class="lsumm"><span style="font-size:1.5rem;font-weight:700;color:#7c3aed">${LEARNING_DATA.filter(l=>l.progress>=70).length}</span><span>Near Completion</span></div>
+        </div>
+        ${LEARNING_DATA.map(l => `
+        <div class="learn-row">
+            <div class="learn-avatar">${l.name[0]}</div>
+            <div class="learn-info">
+                <div class="learn-name">${l.name}</div>
+                <div class="learn-course">📚 ${l.course}</div>
+                <div class="learn-prog-bar"><div class="learn-prog-fill" style="width:${l.progress}%;background:${l.progress>=70?'#22c55e':l.progress>=40?'#f59e0b':'#ef4444'}"></div></div>
+                <div class="learn-meta">${l.progress}% · ${l.done}/${l.modules} modules · 🏆 ${l.cert}</div>
+            </div>
+        </div>
+        `).join('')}
+    `;
+}
+
+// ====== ID CARD ======
+function showIDCard(emp) {
+    document.getElementById('liveTrackerModal').classList.remove('open');
+    document.getElementById('idCardModal').classList.add('open');
+    const status = emp.status || 'working';
+    const statusColor = STATUS_COLORS[status];
+    document.getElementById('idCardContent').innerHTML = `
+        <div class="id-card" id="printableCard">
+            <div class="id-card-inner">
+                <div class="id-card-top">
+                    <div class="id-top-brand">
+                        <svg viewBox="0 0 50 50" fill="none" stroke="#00f5d4" stroke-width="1.5" width="28" height="28"><polygon points="25,3 47,14 47,36 25,47 3,36 3,14"/></svg>
+                        <span>NEXHR</span>
+                    </div>
+                    <div class="id-status-badge" style="background:${statusColor}22;color:${statusColor};border-color:${statusColor}44">
+                        ${STATUS_ICONS[status]} ${status.toUpperCase()}
+                    </div>
+                </div>
+                <div class="id-photo">${emp.avatar}</div>
+                <div class="id-name">${emp.name}</div>
+                <div class="id-designation">${emp.dept} Department</div>
+                <div class="id-emp-id">${emp.id}</div>
+                <div class="id-details">
+                    <div class="id-det-row"><span>Performance</span><span style="color:#00f5d4">${emp.perf}%</span></div>
+                    <div class="id-det-row"><span>Current Task</span><span style="color:#e2e8f0">${emp.task || 'N/A'}</span></div>
+                    <div class="id-det-row"><span>Learning</span><span style="color:#f59e0b">${emp.learning || 'N/A'}</span></div>
+                    <div class="id-det-row"><span>Active Time</span><span style="color:#22c55e">${emp.time || 'N/A'}</span></div>
+                </div>
+                <div class="id-qr-section">
+                    <div id="qr-${emp.id.replace(/\s/g,'')}"></div>
+                    <div class="id-qr-label">Scan for full profile</div>
+                </div>
+                <div class="id-footer">NexHR Intelligence Platform · Verified Employee</div>
+            </div>
+        </div>
+    `;
+    // Generate QR code
+    setTimeout(() => {
+        const qrEl = document.getElementById('qr-'+emp.id.replace(/\s/g,''));
+        if (qrEl && typeof QRCode !== 'undefined') {
+            new QRCode(qrEl, {
+                text: JSON.stringify({id:emp.id,name:emp.name,dept:emp.dept,perf:emp.perf,status:emp.status}),
+                width: 100, height: 100,
+                colorDark: '#00f5d4', colorLight: '#0a0f1e',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+    }, 100);
+}
+
+function printIDCard() {
+    const card = document.getElementById('printableCard');
+    if (!card) return;
+    const win = window.open('','_blank');
+    win.document.write(`<html><head><title>Employee ID Card</title>
+    <style>body{margin:0;background:#020617;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Rajdhani',sans-serif}
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700&display=swap');
+    </style></head><body>${card.outerHTML}</body></html>`);
+    win.document.close();
+    setTimeout(() => { win.print(); }, 500);
+}
+
+// ====== CHATBOT ======
+function toggleChatbot() {
+    document.getElementById('chatbotWidget').classList.toggle('open');
+}
+
+async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const query = input.value.trim();
+    if (!query) return;
+    const msgs = document.getElementById('chatMessages');
+    msgs.innerHTML += `<div class="chat-msg user-msg">${query}</div>`;
+    input.value = '';
+    msgs.scrollTop = msgs.scrollHeight;
+    const loadId = 'load_'+Date.now();
+    msgs.innerHTML += `<div class="chat-msg bot-msg typing" id="${loadId}">⋯ processing</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+    try {
+        const res = await fetch('/hr/chatbot', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+        const data = await res.json();
+        document.getElementById(loadId).remove();
+        msgs.innerHTML += `<div class="chat-msg bot-msg">${data.response}</div>`;
+    } catch(e) {
+        document.getElementById(loadId).remove();
+        msgs.innerHTML += `<div class="chat-msg bot-msg">⚠️ Connection error. Try again.</div>`;
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Employees — NexHR{% endblock %}
+{% block page_title %}Employee Directory{% endblock %}
+{% block content %}
+
+<div class="toolbar">
+    <form method="GET" class="search-form">
+        <input type="text" name="search" value="{{ search }}" placeholder="Search by name, email or role..." class="search-input">
+        <select name="department" class="filter-select">
+            <option value="">All Departments</option>
+            {% for dept in departments %}
+            <option value="{{ dept.department }}" {% if dept.department == dept_filter %}selected{% endif %}>{{ dept.department }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary">Search</button>
+        {% if search or dept_filter %}<a href="{{ url_for('admin.view_employees') }}" class="btn-secondary">Clear</a>{% endif %}
+    </form>
+    {% if session.role in ['admin', 'hr'] %}
+    <a href="{{ url_for('admin.add_employee') }}" class="btn-primary">+ Add Employee</a>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <div class="panel-body" style="padding:0">
+        {% if employees %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Salary</th>
+                    <th>Performance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in employees %}
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:.75rem">
+                            <div class="emp-avatar" style="width:36px;height:36px;font-size:.85rem">{{ emp.name[0] }}</div>
+                            <div>
+                                <div style="font-weight:600;color:var(--text)">{{ emp.name }}</div>
+                                <div style="font-size:.78rem;color:var(--muted)">{{ emp.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ emp.department }}</td>
+                    <td>{{ emp.designation }}</td>
+                    <td style="font-family:'JetBrains Mono',monospace;color:#00f5d4">${{ "{:,}".format(emp.salary) }}</td>
+                    <td>
+                        <div class="perf-bar-mini">
+                            <div class="perf-fill {{ 'perf-high' if emp.performance_score >= 80 else 'perf-mid' if emp.performance_score >= 60 else 'perf-low' }}" style="width:{{ emp.performance_score }}%"></div>
+                        </div>
+                        <span style="font-size:.78rem;color:var(--muted)">{{ emp.performance_score }}%</span>
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <button onclick="viewIDCard({{ emp.id }}, '{{ emp.name | replace("'","") }}', '{{ emp.department }}', '{{ emp.designation | replace("'","") }}', {{ emp.performance_score }})" class="btn-neon-xs" title="ID Card">ID</button>
+                            {% if session.role in ['admin', 'hr'] %}
+                            <a href="{{ url_for('admin.edit_employee', emp_id=emp.id) }}" class="btn-icon" title="Edit">✎</a>
+                            {% endif %}
+                            {% if session.role == 'admin' %}
+                            <form method="POST" action="{{ url_for('admin.delete_employee', emp_id=emp.id) }}" onsubmit="return confirm('Remove {{ emp.name | replace("'","") }}?');" style="display:inline">
+                                <button type="submit" class="btn-icon btn-danger" title="Remove">✕</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="table-footer">Showing {{ employees | length }} employee(s)</div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">◉</div>
+            <p>No employees found. <a href="{{ url_for('admin.add_employee') }}" style="color:var(--neon)">Add one now →</a></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function viewIDCard(id, name, dept, designation, perf) {
+    const empId = 'EMP' + String(id).padStart(3, '0');
+    showIDCard({
+        id: empId,
+        name: name,
+        dept: dept,
+        task: designation,
+        learning: 'Active Learning Program',
+        time: 'N/A',
+        avatar: name[0],
+        perf: perf,
+        status: 'working'
+    });
+}
+</script>
+{% endblock %}

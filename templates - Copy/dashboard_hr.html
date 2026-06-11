@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}HR Dashboard — NexHR{% endblock %}
+{% block page_title %}HR Dashboard{% endblock %}
+{% block content %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(0,245,212,.08);color:#00f5d4">◉</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ total_employees }}">0</div>
+            <div class="stat-label">Active Employees</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(34,197,94,.08);color:#22c55e">✓</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ att_today }}">0</div>
+            <div class="stat-label">Present Today</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(124,58,237,.1);color:#a78bfa">◐</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ total_candidates }}">0</div>
+            <div class="stat-label">Total Candidates</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,.1);color:#f59e0b">⏳</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ pending_interviews }}">0</div>
+            <div class="stat-label">Pending Interviews</div>
+        </div>
+    </div>
+</div>
+
+<!-- Live Banner -->
+<div style="background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);border-radius:12px;padding:.9rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="openLiveTracker()">
+    <div style="display:flex;align-items:center;gap:.75rem">
+        <div style="width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 10px #22c55e;animation:livePulse 1.5s ease infinite"></div>
+        <span style="font-family:'Orbitron',monospace;font-size:.82rem;color:#22c55e;font-weight:700">LIVE ACTIVITY</span>
+        <span style="font-size:.85rem;color:var(--muted)">Track employee activity and learning in real time</span>
+    </div>
+    <span style="font-family:'Orbitron',monospace;font-size:.75rem;color:var(--neon)">VIEW ALL →</span>
+</div>
+
+<div class="dashboard-grid two-col">
+    <div class="panel">
+        <div class="panel-header"><h3>Department Breakdown</h3></div>
+        <div class="panel-body">
+            {% for dept in dept_data %}
+            <div style="margin-bottom:.75rem">
+                <div style="display:flex;justify-content:space-between;margin-bottom:.3rem;font-size:.82rem">
+                    <span>{{ dept.department }}</span>
+                    <span style="color:var(--neon);font-family:'JetBrains Mono',monospace">{{ dept.count }}</span>
+                </div>
+                <div class="dept-bar-track">
+                    <div class="dept-bar" style="width:{{ (dept.count / total_employees * 100)|round }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+            <div style="margin-top:1.25rem">
+                <canvas id="deptDonut" height="160"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Recently Added</h3>
+            <a href="{{ url_for('admin.add_employee') }}" class="btn-sm">+ Add</a>
+        </div>
+        <div class="panel-body">
+            {% for emp in recent_employees %}
+            <div class="emp-row">
+                <div class="emp-avatar">{{ emp.name[0] }}</div>
+                <div class="emp-info">
+                    <div class="emp-name">{{ emp.name }}</div>
+                    <div class="emp-dept">{{ emp.department }} · {{ emp.designation }}</div>
+                </div>
+                <div class="perf-badge {{ 'perf-high' if emp.performance_score >= 80 else 'perf-mid' if emp.performance_score >= 60 else 'perf-low' }}">{{ emp.performance_score }}%</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid two-col" style="margin-top:1rem">
+    <div class="panel">
+        <div class="panel-header"><h3>Recent AI Scores</h3></div>
+        <div class="panel-body" style="padding:0">
+            <table class="data-table">
+                <thead><tr><th>Employee</th><th>Score</th><th>Verdict</th><th>Date</th></tr></thead>
+                <tbody>
+                    {% for log in ai_logs %}
+                    <tr>
+                        <td>{{ log.emp_name }}</td>
+                        <td style="font-family:'JetBrains Mono',monospace;color:var(--neon)"><strong>{{ log.ai_score }}</strong></td>
+                        <td><span class="perf-badge {{ 'perf-high' if log.ai_score >= 80 else 'perf-mid' if log.ai_score >= 60 else 'perf-low' }}">{{ log.recommendation }}</span></td>
+                        <td style="font-size:.75rem;color:var(--muted)">{{ log.created_at[:10] }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:1.5rem">No AI scores yet</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div>
+        <div class="quick-actions" style="grid-template-columns:1fr 1fr">
+            <a href="{{ url_for('hr.candidates') }}" class="action-card"><div class="action-icon">◐</div>Candidates</a>
+            <a href="{{ url_for('hr.attendance') }}" class="action-card"><div class="action-icon">◑</div>Attendance</a>
+            <a href="{{ url_for('hr.performance_prediction') }}" class="action-card"><div class="action-icon">◒</div>AI Prediction</a>
+            <a href="#" onclick="openLiveTracker()" class="action-card"><div class="action-icon" style="color:#22c55e">⬤</div>Live Tracker</a>
+            <a href="#" onclick="openLearningHub()" class="action-card"><div class="action-icon" style="color:#f59e0b">◈</div>Learning Hub</a>
+        </div>
+    </div>
+</div>
+
+<script>
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+new Chart(document.getElementById('deptDonut'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for d in dept_data %}'{{ d.department }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for d in dept_data %}{{ d.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#00f5d4','#7c3aed','#f59e0b','#ef4444','#22c55e','#ec4899'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        cutout: '65%',
+        plugins: { legend: { position: 'bottom', labels: { padding: 10, font: { size: 10 } } } }
+    }
+});
+</script>
+{% endblock %}

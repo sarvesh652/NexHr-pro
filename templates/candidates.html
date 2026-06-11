@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Candidate Ranking — HR Intelligence{% endblock %}
+{% block page_title %}Smart Candidate Ranking{% endblock %}
+
+{% block content %}
+<div class="panel-header-row">
+    <div class="formula-badge">
+        🧠 Overall Score = (Skill × 40%) + (Experience × 30%) + (Interview × 30%)
+    </div>
+    <button onclick="togglePanel('addCandidatePanel')" class="btn-primary">+ Add Candidate</button>
+</div>
+
+<!-- Add Candidate Panel -->
+<div class="panel collapse-panel" id="addCandidatePanel" style="display:none; margin-bottom:1.5rem;">
+    <div class="panel-header"><h3>Add New Candidate</h3></div>
+    <div class="panel-body">
+        <form method="POST" class="emp-form grid-2col">
+            <input type="hidden" name="action" value="add">
+            <div class="form-group">
+                <label>Full Name *</label>
+                <input type="text" name="name" required placeholder="Candidate name">
+            </div>
+            <div class="form-group">
+                <label>Email *</label>
+                <input type="email" name="email" required placeholder="candidate@email.com">
+            </div>
+            <div class="form-group">
+                <label>Department *</label>
+                <select name="department" required>
+                    <option>Engineering</option><option>Marketing</option>
+                    <option>Sales</option><option>HR</option><option>Finance</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Experience (Years)</label>
+                <input type="number" name="experience_years" value="0" min="0" max="30">
+            </div>
+            <div class="form-group">
+                <label>Skill Score (0-100)</label>
+                <input type="number" name="skill_score" value="0" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Interview Score (0-100)</label>
+                <input type="number" name="interview_score" value="0" min="0" max="100">
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+                <button type="submit" class="btn-primary">Add Candidate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="filter-row">
+    <form method="GET" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+        <select name="department" onchange="this.form.submit()" class="filter-select">
+            <option value="">All Departments</option>
+            {% for d in departments %}
+            <option value="{{ d.department }}" {% if d.department == dept_filter %}selected{% endif %}>{{ d.department }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<!-- Ranking Table -->
+<div class="panel">
+    <div class="panel-body" style="padding:0;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Candidate</th>
+                    <th>Department</th>
+                    <th>Skill (40%)</th>
+                    <th>Experience (30%)</th>
+                    <th>Interview (30%)</th>
+                    <th>Overall Score</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in candidates %}
+                <tr>
+                    <td>
+                        <span class="rank-badge rank-{{ c.rank_badge }}">
+                            {% if c.rank == 1 %}🥇{% elif c.rank == 2 %}🥈{% elif c.rank == 3 %}🥉{% else %}#{{ c.rank }}{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="emp-row" style="padding:0;gap:.5rem;">
+                            <div class="emp-avatar" style="width:32px;height:32px;font-size:.8rem;">{{ c.name[0] }}</div>
+                            <div>
+                                <div class="emp-name" style="font-size:.875rem;">{{ c.name }}</div>
+                                <div style="font-size:.75rem;color:#94a3b8;">{{ c.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="dept-pill">{{ c.department }}</span></td>
+                    <td>
+                        <div class="mini-bar-wrap">
+                            <div class="mini-bar" style="width:{{ c.skill_score }}%; background:#3b82f6;"></div>
+                        </div>
+                        <span class="mini-score">{{ c.skill_score }}%</span>
+                    </td>
+                    <td>
+                        <div class="mini-bar-wrap">
+                            <div class="mini-bar" style="width:{{ c.exp_score }}%; background:#10b981;"></div>
+                        </div>
+                        <span class="mini-score">{{ c.experience_years }}yr</span>
+                    </td>
+                    <td>
+                        <div class="mini-bar-wrap">
+                            <div class="mini-bar" style="width:{{ c.interview_score }}%; background:#f59e0b;"></div>
+                        </div>
+                        <span class="mini-score">{{ c.interview_score }}%</span>
+                    </td>
+                    <td>
+                        <div class="overall-score {{ 'score-high' if c.overall_score >= 75 else 'score-mid' if c.overall_score >= 50 else 'score-low' }}">
+                            {{ c.overall_score }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-pill status-{{ c.status }}">{{ c.status | capitalize }}</span>
+                    </td>
+                    <td>
+                        <form method="POST" style="display:flex;gap:.25rem;">
+                            <input type="hidden" name="action" value="status">
+                            <input type="hidden" name="candidate_id" value="{{ c.id }}">
+                            <select name="status" class="filter-select" style="font-size:.75rem;padding:.2rem .4rem;">
+                                <option value="applied" {% if c.status=='applied' %}selected{% endif %}>Applied</option>
+                                <option value="shortlisted" {% if c.status=='shortlisted' %}selected{% endif %}>Shortlisted</option>
+                                <option value="interviewed" {% if c.status=='interviewed' %}selected{% endif %}>Interviewed</option>
+                                <option value="offered" {% if c.status=='offered' %}selected{% endif %}>Offered</option>
+                                <option value="rejected" {% if c.status=='rejected' %}selected{% endif %}>Rejected</option>
+                            </select>
+                            <button type="submit" class="btn-xs">✓</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;">No candidates found. Add one above!</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function togglePanel(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

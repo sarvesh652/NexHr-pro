@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Attendance — HR Intelligence{% endblock %}
+{% block page_title %}Attendance Tracker{% endblock %}
+
+{% block content %}
+<div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(16,185,129,.15);color:#10b981;">✓</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ present }}">0</div>
+            <div class="stat-label">Present Today</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(239,68,68,.15);color:#ef4444;">✗</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ absent }}">0</div>
+            <div class="stat-label">Absent Today</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(59,130,246,.15);color:#3b82f6;">◉</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ employees|length }}">0</div>
+            <div class="stat-label">Total Employees</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(245,158,11,.15);color:#f59e0b;">%</div>
+        <div class="stat-info">
+            <div class="stat-value" data-count="{{ ((present / employees|length * 100) if employees|length > 0 else 0) | round | int }}" data-suffix="%">0%</div>
+            <div class="stat-label">Attendance Rate</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Mark Attendance -->
+    <div class="panel">
+        <div class="panel-header"><h3>Mark Attendance</h3></div>
+        <div class="panel-body">
+            <form method="POST" class="emp-form">
+                <div class="form-group">
+                    <label>Employee</label>
+                    <select name="employee_id" required>
+                        {% for emp in employees %}
+                        <option value="{{ emp.id }}">{{ emp.name }} — {{ emp.department }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" name="date" value="{{ date_filter }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status" required>
+                        <option value="present">✅ Present</option>
+                        <option value="wfh">🏠 Work From Home</option>
+                        <option value="late">⏰ Late</option>
+                        <option value="absent">❌ Absent</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;">Mark Attendance</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Today's Attendance Sheet -->
+    <div class="panel">
+        <div class="panel-header">
+            <h3>Attendance Sheet</h3>
+            <form method="GET" style="display:flex;gap:.5rem;">
+                <input type="date" name="date" value="{{ date_filter }}" class="filter-select" onchange="this.form.submit()">
+            </form>
+        </div>
+        <div class="panel-body" style="padding:0;max-height:400px;overflow-y:auto;">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Employee</th><th>Dept</th><th>Status</th><th>Time</th></tr>
+                </thead>
+                <tbody>
+                    {% for emp in employees %}
+                    {% set rec = att_map.get(emp.id) %}
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:.5rem;">
+                                <div class="emp-avatar" style="width:28px;height:28px;font-size:.75rem;">{{ emp.name[0] }}</div>
+                                {{ emp.name }}
+                            </div>
+                        </td>
+                        <td><span class="dept-pill">{{ emp.department }}</span></td>
+                        <td>
+                            {% if rec %}
+                            <span class="att-status att-{{ rec.status }}">
+                                {% if rec.status == 'present' %}✅ Present
+                                {% elif rec.status == 'wfh' %}🏠 WFH
+                                {% elif rec.status == 'late' %}⏰ Late
+                                {% else %}❌ Absent{% endif %}
+                            </span>
+                            {% else %}
+                            <span class="att-status att-unmarked">— Not Marked</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size:.75rem;color:#94a3b8;">
+                            {% if rec %}{{ rec.marked_at[:16] if rec.marked_at else '—' }}{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Trend Chart -->
+{% if monthly %}
+<div class="panel" style="margin-top:1.5rem;">
+    <div class="panel-header"><h3>Monthly Attendance Trend</h3></div>
+    <div class="panel-body chart-body">
+        <canvas id="attChart" height="120"></canvas>
+    </div>
+</div>
+<script>
+new Chart(document.getElementById('attChart'), {
+    type: 'line',
+    data: {
+        labels: [{% for m in monthly %}'{{ m.date }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Present',
+            data: [{% for m in monthly %}{{ m.present_count }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59,130,246,.1)',
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#3b82f6',
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: '#64748b' } },
+            x: { grid: { display: false }, ticks: { color: '#64748b', maxRotation: 45 } }
+        },
+        animation: { duration: 900 }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
